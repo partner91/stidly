@@ -1,0 +1,2 @@
+-- Local seed file intentionally left minimal.
+-- Sign up through Auth to create users and their related profile rows.
