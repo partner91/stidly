@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { normalizeTodoInput } from "./todoTime";
 
 function toLocalDateKey(value) {
   const date = new Date(value);
@@ -10,6 +11,20 @@ function toLocalDateKey(value) {
 
 function getSectionKey(todoDate) {
   return todoDate ?? "__undated__";
+}
+
+function compareDateKeys(left, right) {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+function startOfWeekMonday(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
 }
 
 function normalizeTodosWithOrder(todos) {
@@ -49,24 +64,130 @@ function normalizeTodosWithOrder(todos) {
   return normalized;
 }
 
+const currentWeekStart = startOfWeekMonday(new Date());
+
+function getWeekDate(offset) {
+  const date = new Date(currentWeekStart);
+  date.setDate(currentWeekStart.getDate() + offset);
+  return toLocalDateKey(date);
+}
+
 const INITIAL_TODOS = normalizeTodosWithOrder([
   {
     id: "t1",
-    title: "Buy groceries",
+    title: "Dentist",
     done: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2,
+    todoDate: getWeekDate(0),
+    order: 1,
   },
   {
     id: "t2",
-    title: "Finish React Native screen",
-    done: true,
-    createdAt: Date.now() - 1000 * 60 * 60 * 12,
+    title: "Call bank",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2 + 1,
+    todoDate: getWeekDate(0),
+    order: 2,
   },
   {
     id: "t3",
+    title: "Buy diapers",
+    done: true,
+    doneAt: Date.now() - 1000 * 60 * 60,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24,
+    todoDate: getWeekDate(0),
+    order: 3,
+  },
+  {
+    id: "t4",
+    title: "Call plumber",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 22,
+    todoDate: getWeekDate(1),
+    order: 1,
+  },
+  {
+    id: "t5",
+    title: "Team meeting",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 20,
+    todoDate: getWeekDate(1),
+    order: 2,
+  },
+  {
+    id: "t6",
+    title: "Grocery shopping",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 18,
+    todoDate: getWeekDate(2),
+    order: 1,
+  },
+  {
+    id: "t7",
+    title: "Pay electricity bill",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 17,
+    todoDate: getWeekDate(2),
+    order: 2,
+  },
+  {
+    id: "t8",
+    title: "Finish React Native screen",
+    done: true,
+    doneAt: Date.now() - 1000 * 60 * 45,
+    createdAt: Date.now() - 1000 * 60 * 60 * 16,
+    todoDate: getWeekDate(3),
+    order: 1,
+  },
+  {
+    id: "t9",
     title: "Call mom",
     done: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 2,
+    createdAt: Date.now() - 1000 * 60 * 60 * 15,
+    todoDate: getWeekDate(3),
+    order: 2,
+  },
+  {
+    id: "t10",
+    title: "Buy groceries",
+    done: true,
+    doneAt: Date.now() - 1000 * 60 * 50,
+    createdAt: Date.now() - 1000 * 60 * 60 * 14,
+    todoDate: getWeekDate(3),
+    order: 3,
+  },
+  {
+    id: "t11",
+    title: "Review home screen",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 13,
+    todoDate: getWeekDate(3),
+    order: 4,
+  },
+  {
+    id: "t12",
+    title: "Send client update",
+    done: true,
+    doneAt: Date.now() - 1000 * 60 * 40,
+    createdAt: Date.now() - 1000 * 60 * 60 * 12,
+    todoDate: getWeekDate(3),
+    order: 5,
+  },
+  {
+    id: "t13",
+    title: "Coffee with Ana",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 11,
+    todoDate: getWeekDate(4),
+    order: 1,
+  },
+  {
+    id: "u1",
+    title: "Parking permit",
+    done: false,
+    createdAt: Date.now() - 1000 * 60 * 60 * 10,
+    todoDate: null,
+    order: 1,
   },
 ]);
 
@@ -74,8 +195,8 @@ export const useTodosStore = create((set, get) => ({
   todos: INITIAL_TODOS,
 
   addTodo: (title, todoDate) => {
-    const trimmed = String(title || "").trim();
-    if (!trimmed) return;
+    const normalized = normalizeTodoInput(title);
+    if (!normalized.title) return;
 
     const now = Date.now();
     const targetDate = todoDate || toLocalDateKey(now);
@@ -88,7 +209,10 @@ export const useTodosStore = create((set, get) => ({
 
     const todo = {
       id: String(now) + "-" + Math.random().toString(16).slice(2),
-      title: trimmed,
+      title: normalized.title,
+      timeText: normalized.timeText,
+      carriedOver: false,
+      carriedFromDate: null,
       done: false,
       createdAt: now,
       todoDate: targetDate,
@@ -99,8 +223,8 @@ export const useTodosStore = create((set, get) => ({
   },
 
   addUndatedTodo: (title) => {
-    const trimmed = String(title || "").trim();
-    if (!trimmed) return;
+    const normalized = normalizeTodoInput(title);
+    if (!normalized.title) return;
 
     const now = Date.now();
     const sectionTodos = get().todos.filter((todo) => todo.todoDate === null);
@@ -111,7 +235,10 @@ export const useTodosStore = create((set, get) => ({
 
     const todo = {
       id: String(now) + "-" + Math.random().toString(16).slice(2),
-      title: trimmed,
+      title: normalized.title,
+      timeText: normalized.timeText,
+      carriedOver: false,
+      carriedFromDate: null,
       done: false,
       createdAt: now,
       todoDate: null,
@@ -164,11 +291,66 @@ export const useTodosStore = create((set, get) => ({
     set((state) => ({ todos: state.todos.filter((t) => !t.done) }));
   },
 
+  refreshCarriedTodos: () =>
+    set((state) => {
+      const todayKey = toLocalDateKey(new Date());
+      const todos = [...state.todos];
+      const overdueTodos = todos
+        .filter(
+          (todo) =>
+            !todo.done &&
+            typeof todo.todoDate === "string" &&
+            compareDateKeys(todo.todoDate, todayKey) < 0
+        )
+        .sort((a, b) => {
+          const dateCompare = compareDateKeys(a.todoDate, b.todoDate);
+          if (dateCompare !== 0) return dateCompare;
+          const orderA = typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
+          const orderB = typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.createdAt - b.createdAt;
+        });
+
+      if (!overdueTodos.length) return state;
+
+      let nextTodayOrder = todos.reduce((max, todo) => {
+        if (todo.todoDate !== todayKey) return max;
+        return typeof todo.order === "number" && todo.order > max ? todo.order : max;
+      }, 0);
+
+      const nextTodos = todos.map((todo) => {
+        if (
+          todo.done ||
+          typeof todo.todoDate !== "string" ||
+          compareDateKeys(todo.todoDate, todayKey) >= 0
+        ) {
+          return todo;
+        }
+
+        nextTodayOrder += 1;
+        return {
+          ...todo,
+          todoDate: todayKey,
+          carriedOver: true,
+          carriedFromDate: todo.todoDate,
+          order: nextTodayOrder,
+        };
+      });
+
+      return { todos: normalizeTodosWithOrder(nextTodos) };
+    }),
+
   getTodoById: (id) => get().todos.find((t) => t.id === id),
 
   updateTodoTitle: (id, title) =>
     set((state) => ({
-      todos: state.todos.map((t) => (t.id === id ? { ...t, title } : t)),
+      todos: state.todos.map((t) => {
+        if (t.id !== id) return t;
+        const normalized = normalizeTodoInput(title);
+        return normalized.title
+          ? { ...t, title: normalized.title, timeText: normalized.timeText }
+          : t;
+      }),
     })),
 
   assignTodoDate: (id, todoDate) =>
@@ -188,6 +370,8 @@ export const useTodosStore = create((set, get) => ({
             ? {
                 ...todo,
                 todoDate,
+                carriedOver: false,
+                carriedFromDate: null,
                 order: maxOrder + 1,
               }
             : todo

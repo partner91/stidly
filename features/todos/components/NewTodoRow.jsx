@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTodosStore } from "../todo.store";
 import { Theme } from "../../shared/constants/Theme";
 
@@ -27,13 +28,15 @@ export default function NewTodoRow({ day, dateKey, placeholder, onSubmit }) {
 
   return (
     <View style={styles.container}>
+      <Ionicons color={Theme.colors.textMuted} name="add" size={16} />
       <TextInput
         value={value}
         onChangeText={setValue}
         onSubmitEditing={submit}
         onBlur={submit}
         returnKeyType="done"
-        placeholder={placeholder ?? `Add todo for ${day}`}
+        placeholder={placeholder ?? `Add task...`}
+        placeholderTextColor={Theme.colors.textSubtle}
         style={styles.input}
       />
     </View>
@@ -42,16 +45,19 @@ export default function NewTodoRow({ day, dateKey, placeholder, onSubmit }) {
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
     backgroundColor: Theme.colors.surface,
-    borderBottomColor: Theme.colors.divider,
-    borderBottomWidth: 1,
-    marginHorizontal: 24,
-    paddingVertical: 10,
+    flexDirection: "row",
+    marginHorizontal: 2,
+    paddingBottom: 8,
+    paddingTop: 4,
   },
   input: {
-    color: Theme.colors.accentStrong,
-    fontFamily: "Nunito_700Bold",
-    fontSize: 13,
+    color: Theme.colors.textMuted,
+    flex: 1,
+    fontFamily: "Nunito_400Regular",
+    fontSize: 15,
+    marginLeft: 12,
     padding: 0,
   },
 });

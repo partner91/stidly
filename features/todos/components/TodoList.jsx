@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { SectionList, StyleSheet } from "react-native";
 import TodoItem from "./TodoItem";
 import TodoHeader from "./TodoHeader";
@@ -24,8 +24,11 @@ function toLocalDateKey(value) {
 }
 
 function toDayMonthLabel(dateKey) {
-  const [year, month, day] = dateKey.split("-");
-  return `${day}.${month}.`;
+  const date = new Date(`${dateKey}T00:00:00`);
+  return {
+    dayNumber: date.getDate(),
+    dayName: date.toLocaleString("en-US", { weekday: "long" }),
+  };
 }
 
 function startOfWeekMonday(date) {
@@ -37,12 +40,20 @@ function startOfWeekMonday(date) {
   return d;
 }
 
-export default function TodoList({ selectedWeek }) {
+export default function TodoList({ selectedWeek, scrollResetToken = 0 }) {
   const todos = useTodosStore((state) => state.todos ?? []);
+  const refreshCarriedTodos = useTodosStore((state) => state.refreshCarriedTodos);
+  const listRef = useRef(null);
+  const pendingScrollTokenRef = useRef(null);
+
+  useEffect(() => {
+    refreshCarriedTodos();
+  }, [refreshCarriedTodos, todos]);
 
   const sections = useMemo(() => {
     const grouped = new Map();
     const weekStart = startOfWeekMonday(selectedWeek ?? new Date());
+    const todayKey = toLocalDateKey(new Date());
 
     const weekDates = DAY_ORDER.map((title, index) => {
       const date = new Date(weekStart);
@@ -82,15 +93,15 @@ export default function TodoList({ selectedWeek }) {
       });
     }
 
-    return weekDates.map(({ title, dateKey }, index) => {
+    return weekDates.map(({ title, dateKey }) => {
       const sectionTodos = grouped.get(dateKey) ?? [];
       const completedCount = sectionTodos.filter((todo) => todo.done).length;
       const totalCount = sectionTodos.length;
 
       return {
-        isFirst: index === 0,
         title,
         dateKey,
+        isToday: dateKey === todayKey,
         completedCount,
         totalCount,
         dateLabel: toDayMonthLabel(dateKey),
@@ -99,10 +110,43 @@ export default function TodoList({ selectedWeek }) {
     });
   }, [selectedWeek, todos]);
 
+  function scrollToTargetSection() {
+    if (!sections.length) return;
+
+    const todaySectionIndex = sections.findIndex((section) => section.isToday);
+    const targetSectionIndex = todaySectionIndex >= 0 ? todaySectionIndex : 0;
+    listRef.current?.scrollToLocation({
+      animated: false,
+      itemIndex: 0,
+      sectionIndex: targetSectionIndex,
+      viewOffset: 0,
+      viewPosition: 0,
+    });
+    pendingScrollTokenRef.current = null;
+  }
+
+  useEffect(() => {
+    if (!sections.length) return;
+    pendingScrollTokenRef.current = scrollResetToken;
+
+    const timer = setTimeout(() => {
+      scrollToTargetSection();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [scrollResetToken, sections]);
+
   return (
     <SectionList
+      ref={listRef}
       contentContainerStyle={styles.listContent}
       sections={sections}
+      onContentSizeChange={() => {
+        if (pendingScrollTokenRef.current !== null) {
+          scrollToTargetSection();
+        }
+      }}
+      onScrollToIndexFailed={() => {}}
       stickySectionHeadersEnabled={false}
       renderSectionHeader={({ section }) => (
         <TodoHeader
@@ -110,7 +154,7 @@ export default function TodoList({ selectedWeek }) {
           completedCount={section.completedCount}
           totalCount={section.totalCount}
           dateLabel={section.dateLabel}
-          isFirst={section.isFirst}
+          isToday={section.isToday}
         />
       )}
       renderItem={({ item }) => {
@@ -131,5 +175,6 @@ export default function TodoList({ selectedWeek }) {
 const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 164,
+    paddingTop: 2,
   },
 });

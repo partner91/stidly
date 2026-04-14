@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Theme } from "../../shared/constants/Theme";
 
 export default function TodoHeader({
@@ -6,19 +7,26 @@ export default function TodoHeader({
   completedCount = 0,
   totalCount = 0,
   dateLabel,
-  isFirst = false,
+  isToday = false,
 }) {
+  const isWeekend = title === "Saturday" || title === "Sunday";
+
   return (
-    <View style={[styles.container, !isFirst && styles.withTopSpace]}>
-      <View style={styles.left}>
-        <Text style={styles.text}>{title}</Text>
-        <View style={styles.countChip}>
-          <Text style={styles.countText}>
-            {completedCount}/{totalCount}
-          </Text>
-        </View>
+    <View style={[styles.container, styles.withTopSpace, isToday && styles.todayRow]}>
+      <View style={[styles.left, isToday && styles.todayLeft]}>
+        {isToday ? <Ionicons color={Theme.colors.accentStrong} name="sunny" size={16} /> : null}
+        <Text style={[styles.text, isWeekend && styles.weekendText, isToday && styles.todayText]}>
+          {`${dateLabel?.dayName} ${dateLabel?.dayNumber}`}
+        </Text>
       </View>
-      <Text style={styles.dateText}>{dateLabel}</Text>
+      <View style={[styles.right, isToday && styles.todayRight]}>
+        <Text style={[styles.countText, isToday && styles.todayCountText]}>
+          {isToday ? `${completedCount}/${totalCount}` : String(totalCount)}
+        </Text>
+        {isToday ? null : (
+          <Ionicons color={Theme.colors.textMuted} name="chevron-down" size={16} />
+        )}
+      </View>
     </View>
   );
 }
@@ -27,41 +35,66 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     backgroundColor: Theme.colors.surface,
-    borderBottomColor: Theme.colors.dividerStrong,
+    borderBottomColor: Theme.colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginHorizontal: 24,
+    marginHorizontal: 2,
     paddingBottom: 10,
-    paddingTop: 20,
+    paddingTop: 18,
   },
   withTopSpace: {
-    paddingTop: 26,
+    paddingTop: 22,
+  },
+  todayRow: {
+    backgroundColor: Theme.colors.accentSoft,
+    borderBottomWidth: 0,
+    borderRadius: 18,
+    marginTop: 4,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    paddingTop: 8,
   },
   left: {
     alignItems: "center",
     flexDirection: "row",
     gap: 8,
   },
-  text: {
-    color: Theme.colors.accentStrong,
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
+  todayLeft: {
+    flexShrink: 1,
   },
-  countChip: {
-    backgroundColor: Theme.colors.accentSoft,
-    borderRadius: Theme.radius.chip,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  text: {
+    color: Theme.colors.text,
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+  },
+  weekendText: {
+    color: Theme.colors.danger,
+  },
+  todayText: {
+    color: Theme.colors.text,
   },
   countText: {
     color: Theme.colors.textMuted,
     fontFamily: "Nunito_700Bold",
-    fontSize: 11,
-  },
-  dateText: {
-    color: Theme.colors.textSubtle,
-    fontFamily: "Nunito_700Bold",
     fontSize: 13,
+  },
+  todayCountText: {
+    textAlign: "center",
+  },
+  right: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+  },
+  todayRight: {
+    backgroundColor: Theme.colors.surface,
+    borderColor: "#F4D786",
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 26,
+    justifyContent: "center",
+    minWidth: 42,
+    paddingHorizontal: 10,
   },
 });

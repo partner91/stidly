@@ -62,10 +62,22 @@ function MainTabs() {
         sceneStyle: { backgroundColor: Theme.colors.background },
       }}
     >
-      <Tab.Screen name="Home" component={TodosListingScreen} />
-      <Tab.Screen name="NoDate" component={UndatedTodosScreen} options={{ title: "No Date" }} />
-      <Tab.Screen name="Calendar" component={CalendarOverviewScreen} />
-      <Tab.Screen name="Profile" component={ProfileNavigator} />
+      <Tab.Screen name="Home" component={TodosListingScreen} options={{ title: "Week" }} />
+      <Tab.Screen
+        name="NoDate"
+        component={UndatedTodosScreen}
+        options={{ title: "Parking Lot" }}
+      />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarOverviewScreen}
+        options={{ href: null, tabBarButton: () => null }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileNavigator}
+        options={{ href: null, tabBarButton: () => null }}
+      />
     </Tab.Navigator>
   );
 }
